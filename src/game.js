@@ -14,7 +14,7 @@ game.state.add('play', {
         game.load.image('forest-tree', 'assets/images/background03/layer_04.png');
         game.load.image('forest-floor', 'assets/images/background03/layer_03.png');
     
-        game.load.image('skeleton', 'assets/images/allacrost_enemy_sprites/skeleton.png');
+        /*game.load.image('skeleton', 'assets/images/allacrost_enemy_sprites/skeleton.png');
         game.load.image('aerocephal', 'assets/images/allacrost_enemy_sprites/aerocephal.png');
         game.load.image('arcana_drake', 'assets/images/allacrost_enemy_sprites/arcana_drake.png');
         game.load.image('aurum-drakueli', 'assets/images/allacrost_enemy_sprites/aurum-drakueli.png');
@@ -30,7 +30,26 @@ game.state.add('play', {
         game.load.image('scorpion_goliath', 'assets/images/allacrost_enemy_sprites/scorpion_goliath.png');
         game.load.image('snake', 'assets/images/allacrost_enemy_sprites/snake.png');
         game.load.image('spider', 'assets/images/allacrost_enemy_sprites/spider.png');
-        game.load.image('stygian_lizard', 'assets/images/allacrost_enemy_sprites/stygian_lizard.png');
+        game.load.image('stygian_lizard', 'assets/images/allacrost_enemy_sprites/stygian_lizard.png');*/
+    
+        game.load.spritesheet('flower-plant', 'assets/images/monsters/flower-plant_200x266.png', 200, 266, 2);
+        game.load.spritesheet('green-horn-monster', 'assets/images/monsters/green-horn-monster_200x179.png', 200, 179, 2);
+        game.load.spritesheet('green-horn-zombie', 'assets/images/monsters/green-horn-zombie_200x227.png', 200, 227, 2);
+        game.load.spritesheet('horn_skull', 'assets/images/monsters/horn_skull_200x216.png', 200, 216, 2);
+        game.load.spritesheet('land-monster', 'assets/images/monsters/land-monster_200x266.png', 200, 266, 2);
+        game.load.spritesheet('orange-land-monster', 'assets/images/monsters/orange-land-monster-200x149.png', 200, 149, 2);
+        game.load.spritesheet('pink-monster', 'assets/images/monsters/pink-monster_200x170.png', 200, 170, 2);
+        game.load.spritesheet('red-zombie', 'assets/images/monsters/red-zombie_200x219.png', 200, 219, 2);
+        game.load.spritesheet('shadow-skull', 'assets/images/monsters/shadow-skull_200x216.png', 200, 216, 2);
+        game.load.spritesheet('skull-land-monster', 'assets/images/monsters/skull-land-monster_200x192.png', 200, 192, 2);
+        game.load.spritesheet('underground-worm', 'assets/images/monsters/underground-worm_200x221.png', 200, 221, 2);
+        game.load.spritesheet('walking-monster', 'assets/images/monsters/walking-monster_200x232.png', 200, 232, 2);
+        game.load.spritesheet('walking-green-monster', 'assets/images/monsters/walking-green-monster_200x211.png', 200, 211, 2);
+        game.load.spritesheet('blue-monster', 'assets/images/monsters/blue-monster_200x237.png', 200, 237, 2);
+        game.load.spritesheet('fly-monster', 'assets/images/monsters/fly-monster_200x155.png', 200, 155, 3);
+        game.load.spritesheet('land-monster2', 'assets/images/monsters/land-monster2_200x158.png', 200, 158, 2);
+        game.load.spritesheet('spiky-land-monster', 'assets/images/monsters/spiky-land-monster_200x200.png', 200, 200, 2);
+
     
         game.load.image('gold_coin', 'assets/images/496_RPG_icons/I_GoldCoin.png');
         
@@ -69,19 +88,11 @@ game.state.add('play', {
         // Initialize damage
         this.utils().createDamage();
     
-        this.coins = this.add.group();
-        this.coins.createMultiple(50, 'gold_coin', '', false);
-        this.coins.setAll('inputEnabled', true);
-        this.coins.setAll('goldValue', 1);
-        this.coins.callAll('events.onInputDown.add', 'events.onInputDown', this.onClickCoin, this);
+        // Initialize gold
+        this.utils().createGold();
         
-        this.playerGoldText = this.add.text(30, 30, 'Gold: ' + this.player.gold, {
-            font: '24px Arial Black',
-            fill: '#fff',
-            strokeThickness: 4
-        });
-        
-        this.upgradePanel = this.game.add.image(10, 70, this.game.cache.getBitmapData('upgradePanel'));
+        // Build upgrade panel
+        this.utils().createUpdatePanel(this);
         
     
     },
@@ -145,7 +156,7 @@ game.state.add('play', {
             },
             
             createMonsters: function (state) {
-                const monsterData = [
+                /*const monsterData = [
                     {name: 'Aerocephal',      image: 'aerocephal',      maxHealth: 10},
                     {name: 'Arcana Drake',    image: 'arcana_drake',    maxHealth: 20},
                     {name: 'Aurum Drakueli',  image: 'aurum-drakueli',  maxHealth: 30},
@@ -162,17 +173,46 @@ game.state.add('play', {
                     {name: 'snake',           image: 'snake',           maxHealth: 4},
                     {name: 'spider',          image: 'spider',          maxHealth: 4},
                     {name: 'Stygian Lizard',  image: 'stygian_lizard',  maxHealth: 20}
+                ];*/
+
+                const monsterData = [
+                    {name: 'Flower Plant',      sprite: 'flower-plant',          maxHealth: 8},
+                    {name: 'Green Horn',        sprite: 'green-horn-monster',    maxHealth: 20},
+                    {name: 'Green Horn Zombie', sprite: 'green-horn-zombie',     maxHealth: 30},
+                    {name: 'Horn Skull',        sprite: 'horn_skull',            maxHealth: 13},
+                    {name: 'Landy',             sprite: 'land-monster',          maxHealth: 2},
+                    {name: 'Orange Land',       sprite: 'orange-land-monster',   maxHealth: 5},
+                    {name: 'Pinkette',          sprite: 'pink-monster',          maxHealth: 15},
+                    {name: 'Red Zombie',        sprite: 'red-zombie',            maxHealth: 15},
+                    {name: 'Shadow Skull',      sprite: 'shadow-skull',          maxHealth: 30},
+                    {name: 'Skull Land',        sprite: 'skull-land-monster',    maxHealth: 8},
+                    {name: 'Underground Worm',  sprite: 'underground-worm',      maxHealth: 20},
+                    {name: 'Walking Freak',     sprite: 'walking-monster',       maxHealth: 10},
+                    {name: 'Walking Green',     sprite: 'walking-green-monster', maxHealth: 15},
+                    {name: 'Bluggu',            sprite: 'blue-monster',          maxHealth: 4},
+                    {name: 'Birdy',             sprite: 'fly-monster',           maxHealth: 23},
+                    {name: 'Bigi',              sprite: 'land-monster2',         maxHealth: 25},
+                    {name: 'Spiky',             sprite: 'spiky-land-monster',    maxHealth: 27},
                 ];
     
                 self.monsters = self.game.add.group();
                 let monster;
                 monsterData.forEach(function (data) {
                     // Create a sprite of each monster out of screen
-                    monster = state.monsters.create(1000, state.game.world.centerY, data.image);
+                    monster = state.monsters.create(1000, state.game.world.centerY, data.sprite);
                     // Center anchor
                     monster.anchor.setTo(0.5);
                     // ref to the database
                     monster.details = data;
+    
+                    //  Here we add a new animation called 'walk'
+                    //  Because we didn't give any other parameters it's going to make an animation from all available frames in the 'mummy' sprite sheet
+                    monster.animations.add('walk');
+    
+                    //  And this starts the animation playing by using its key ("walk")
+                    //  30 is the frame rate (30fps)
+                    //  true means it will loop when it finishes
+                    monster.animations.play('walk', 3, true);
         
                     monster.health = monster.maxHealth = data.maxHealth;
         
@@ -229,6 +269,22 @@ game.state.add('play', {
                     });
                     self.dmgTextPool.add(dmgText);
                 }
+            },
+            createGold: function (state) {
+                self.coins = self.add.group();
+                self.coins.createMultiple(50, 'gold_coin', '', false);
+                self.coins.setAll('inputEnabled', true);
+                self.coins.setAll('goldValue', 1);
+                self.coins.callAll('events.onInputDown.add', 'events.onInputDown', self.onClickCoin, self);
+    
+                self.playerGoldText = self.add.text(30, 30, 'Money: ' + self.player.gold, {
+                    font: '24px Arial Black',
+                    fill: '#fff',
+                    strokeThickness: 4
+                });
+            },
+            createUpdatePanel: function (state) {
+                state.upgradePanel = state.game.add.image(10, 70, state.game.cache.getBitmapData('upgradePanel'));
             }
         }
     }
