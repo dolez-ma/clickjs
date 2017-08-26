@@ -2,36 +2,14 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '');
 
 game.state.add('play', {
     preload: function() {
-        /*game.load.image('forest-back', 'assets/images/background01/layer_01_redim.png');
-        game.load.image('forest-cloud', 'assets/images/background01/layer_02_redim.png');
-        game.load.image('forest-mountain', 'assets/images/background01/layer_03_redim.png');
-        game.load.image('forest-tree', 'assets/images/background01/layer_04_redim.png');
-        game.load.image('forest-floor', 'assets/images/background01/layer_05_redim.png');*/
-    
+        // Parallax background loading
         game.load.image('forest-back', 'assets/images/background03/layer_07.png');
         game.load.image('forest-cloud', 'assets/images/background03/layer_06.png');
         game.load.image('forest-mountain', 'assets/images/background03/layer_05.png');
         game.load.image('forest-tree', 'assets/images/background03/layer_04.png');
         game.load.image('forest-floor', 'assets/images/background03/layer_03.png');
     
-        /*game.load.image('skeleton', 'assets/images/allacrost_enemy_sprites/skeleton.png');
-        game.load.image('aerocephal', 'assets/images/allacrost_enemy_sprites/aerocephal.png');
-        game.load.image('arcana_drake', 'assets/images/allacrost_enemy_sprites/arcana_drake.png');
-        game.load.image('aurum-drakueli', 'assets/images/allacrost_enemy_sprites/aurum-drakueli.png');
-        game.load.image('bat', 'assets/images/allacrost_enemy_sprites/bat.png');
-        game.load.image('daemarbora', 'assets/images/allacrost_enemy_sprites/daemarbora.png');
-        game.load.image('deceleon', 'assets/images/allacrost_enemy_sprites/deceleon.png');
-        game.load.image('demonic_essence', 'assets/images/allacrost_enemy_sprites/demonic_essence.png');
-        game.load.image('dune_crawler', 'assets/images/allacrost_enemy_sprites/dune_crawler.png');
-        game.load.image('green_slime', 'assets/images/allacrost_enemy_sprites/green_slime.png');
-        game.load.image('nagaruda', 'assets/images/allacrost_enemy_sprites/nagaruda.png');
-        game.load.image('rat', 'assets/images/allacrost_enemy_sprites/rat.png');
-        game.load.image('scorpion', 'assets/images/allacrost_enemy_sprites/scorpion.png');
-        game.load.image('scorpion_goliath', 'assets/images/allacrost_enemy_sprites/scorpion_goliath.png');
-        game.load.image('snake', 'assets/images/allacrost_enemy_sprites/snake.png');
-        game.load.image('spider', 'assets/images/allacrost_enemy_sprites/spider.png');
-        game.load.image('stygian_lizard', 'assets/images/allacrost_enemy_sprites/stygian_lizard.png');*/
-    
+        // Monster spritesheets loading
         game.load.spritesheet('flower-plant', 'assets/images/monsters/flower-plant_200x266.png', 200, 266, 2);
         game.load.spritesheet('green-horn-monster', 'assets/images/monsters/green-horn-monster_200x179.png', 200, 179, 2);
         game.load.spritesheet('green-horn-zombie', 'assets/images/monsters/green-horn-zombie_200x227.png', 200, 227, 2);
@@ -50,9 +28,12 @@ game.state.add('play', {
         game.load.spritesheet('land-monster2', 'assets/images/monsters/land-monster2_200x158.png', 200, 158, 2);
         game.load.spritesheet('spiky-land-monster', 'assets/images/monsters/spiky-land-monster_200x200.png', 200, 200, 2);
 
-    
+        // Icons loading
         game.load.image('gold_coin', 'assets/images/496_RPG_icons/I_GoldCoin.png');
+        game.load.image('dagger', 'assets/images/496_RPG_icons/W_Dagger002.png');
+        game.load.image('swordIcon1', 'assets/images/496_RPG_icons/W_Sword001.png');
         
+        // Upgrades container
         var bmd = this.game.add.bitmapData(250, 500);
         bmd.ctx.fillStyle = '#9a783d';
         bmd.ctx.strokeStyle = '#35371c';
@@ -61,6 +42,7 @@ game.state.add('play', {
         bmd.ctx.strokeRect(0, 0, 250, 500);
         this.game.cache.addBitmapData('upgradePanel', bmd);
         
+        // Buttons container
         var buttonImage = this.game.add.bitmapData(476, 48);
         buttonImage.ctx.fillStyle = '#e6dec7';
         buttonImage.ctx.strokeStyle = '#35371c';
@@ -68,7 +50,13 @@ game.state.add('play', {
         buttonImage.ctx.fillRect(0, 0, 225, 48);
         buttonImage.ctx.strokeRect(0, 0, 225, 48);
         this.game.cache.addBitmapData('button', buttonImage);
-    
+        
+        // World progression
+        this.level = 1;
+        // Monster killed during level
+        this.levelKills = 0;
+        // Monster kill required to advance a level
+        this.levelKillsRequired = 10;
     },
     create: function() {
         var state = this;
@@ -92,9 +80,9 @@ game.state.add('play', {
         this.utils().createGold();
         
         // Build upgrade panel
-        this.utils().createUpdatePanel(this);
+        this.utils().createUpgratePanel(this);
         
-    
+        this.dpsTimer = this.game.time.events.loop(100, this.onDPS, this);
     },
     render: function() {
     
@@ -114,17 +102,28 @@ game.state.add('play', {
         // Move monster offscreen
         monster.position.set(1000, this.game.world.centerY);
         
-        // pick a new monster
-        this.currentMonster = this.monsters.getRandom();
-        // Heal monster
-        this.currentMonster.revive(this.currentMonster.maxHealth);
-        
         var coin;
         coin = this.coins.getFirstExists(false);
-        coin.reset(this.game.world.centerX + this.game.rnd.integerInRange(-100, 100), this.game.world.centerY);
-        coin.goldValue = 1;
+        coin.reset(this.game.world.centerX + this.game.rnd.integerInRange(-100, 200), this.game.world.centerY + this.game.rnd.integerInRange(-100, 100));
+        coin.goldValue = Math.round(this.level * 1.33);
         this.game.time.events.add(Phaser.Timer.SECOND * 3, this.onClickCoin, this, coin);
+        
+        this.levelKills++;
+        
+        if(this.levelKills >= this.levelKillsRequired){
+            this.level++;
+            this.levelKills = 0;
+        }
     
+        this.levelText.text = 'level: ' + this.level;
+        this.levelKillsText.text = 'Kills: ' + this.levelKills + '/' + this.levelKillsRequired;
+    
+        // pick a new monster
+        this.currentMonster = this.monsters.getRandom();
+        // Upgrade monster based on level
+        this.currentMonster.maxHealth = Math.ceil(this.currentMonster.details.maxHealth + ((this.level - 1) * 10.6));
+        // Heal monster
+        this.currentMonster.revive(this.currentMonster.maxHealth);
     
     },
     onReviveMonster: function (monster) {
@@ -137,8 +136,33 @@ game.state.add('play', {
             return;
         }
         this.player.gold += coin.goldValue;
-        this.playerGoldText.text = 'Gold: ' + this.player.gold;
+        this.playerGoldText.text = 'Money: ' + this.player.gold;
         coin.kill();
+    },
+    onUpgradeButtonClick: function (button, pointer) {
+        
+        function getAdjustedCost() {
+            return Math.ceil(button.details.cost + (button.details.level * 1.46));
+        }
+        
+        if(this.player.gold - button.details.cost >= 0){
+            this.player.gold -= button.details.cost;
+            this.playerGoldText.text = 'Money: ' + this.player.gold;
+            button.details.level++;
+            button.text.text = button.details.name + ': ' + button.details.level;
+            button.details.cost = getAdjustedCost();
+            button.costText.text = 'Cost: ' + button.details.cost;
+            button.details.purchaseHandler.call(this, button, this.player);
+        }
+    },
+    onDPS: function () {
+        if(this.player.dps > 0){
+            if(this.currentMonster && this.currentMonster.alive){
+                var dmg = this.player.dps / 10;
+                this.currentMonster.damage(dmg);
+                this.monsterHealthText.text = this.currentMonster.alive ? Math.round(this.currentMonster.health) + ' HP' : 'DEAD';
+            }
+        }
     },
     utils: function () {
         var self = this;
@@ -156,25 +180,6 @@ game.state.add('play', {
             },
             
             createMonsters: function (state) {
-                /*const monsterData = [
-                    {name: 'Aerocephal',      image: 'aerocephal',      maxHealth: 10},
-                    {name: 'Arcana Drake',    image: 'arcana_drake',    maxHealth: 20},
-                    {name: 'Aurum Drakueli',  image: 'aurum-drakueli',  maxHealth: 30},
-                    {name: 'Bat',             image: 'bat',             maxHealth: 5},
-                    {name: 'Daemarbora',      image: 'daemarbora',      maxHealth: 10},
-                    {name: 'Deceleon',        image: 'deceleon',        maxHealth: 10},
-                    {name: 'Demonic Essence', image: 'demonic_essence', maxHealth: 15},
-                    {name: 'Dune Crawler',    image: 'dune_crawler',    maxHealth: 8},
-                    {name: 'Green Slime',     image: 'green_slime',     maxHealth: 3},
-                    {name: 'Nagaruda',        image: 'nagaruda',        maxHealth: 13},
-                    {name: 'Rat',             image: 'rat',             maxHealth: 2},
-                    {name: 'Scorpion',        image: 'scorpion',        maxHealth: 2},
-                    {name: 'Skeleton',        image: 'skeleton',        maxHealth: 6},
-                    {name: 'snake',           image: 'snake',           maxHealth: 4},
-                    {name: 'spider',          image: 'spider',          maxHealth: 4},
-                    {name: 'Stygian Lizard',  image: 'stygian_lizard',  maxHealth: 20}
-                ];*/
-
                 const monsterData = [
                     {name: 'Flower Plant',      sprite: 'flower-plant',          maxHealth: 8},
                     {name: 'Green Horn',        sprite: 'green-horn-monster',    maxHealth: 20},
@@ -239,11 +244,25 @@ game.state.add('play', {
                     fill: '#ff0000',
                     strokeThickness: 4
                 } ));
+                
+                self.levelUI = self.game.add.group();
+                self.levelUI.position.setTo(self.game.world.centerX, 30);
+                self.levelText = self.levelUI.addChild(self.game.add.text(0, 0, 'Level: ' + self.level, {
+                    font: '24px Arial Black',
+                    fill: '#fff',
+                    strokeThickness: 4
+                } ));
+                self.levelKillsText = self.levelUI.addChild(self.game.add.text(0, 30, 'Kills: ' + self.levelKills + '/' + self.levelKillsRequired, {
+                    font: '24px Arial Black',
+                    fill: '#fff',
+                    strokeThickness: 4
+                } ));
             },
             createPlayer: function () {
                 self.player = {
                     clickDmg: 1,
-                    gold: 0
+                    gold: 0,
+                    dps: 0
                 };
             },
             createDamage: function () {
@@ -283,8 +302,47 @@ game.state.add('play', {
                     strokeThickness: 4
                 });
             },
-            createUpdatePanel: function (state) {
+            createUpgratePanel: function (state) {
+    
+                var upgradeButtonsData = [
+                    {
+                        icon: 'dagger',
+                        name:'Attack',
+                        level: 1,
+                        cost: 5,
+                        purchaseHandler: function (button, player) {
+                            player.clickDmg += 1;
+                        }
+                    },
+                    {
+                        icon: 'swordIcon1',
+                        name:'Auto-Attack',
+                        level: 0,
+                        cost: 25,
+                        purchaseHandler: function (button, player) {
+                            player.dps += 5;
+                        }
+                    }
+                ];
+                
                 state.upgradePanel = state.game.add.image(10, 70, state.game.cache.getBitmapData('upgradePanel'));
+                var upgradeButtons = self.upgradePanel.addChild(self.game.add.group());
+                upgradeButtons.position.setTo(8, 8);
+                
+    
+                var button;
+                upgradeButtonsData.forEach(function (buttonData, index) {
+                    button = self.game.add.button(0, (50 * index), self.game.cache.getBitmapData('button'));
+                    button.icon = button.addChild(state.game.add.image(6, 6, buttonData.icon));
+                    button.text = button.addChild(state.game.add.text(42, 6, buttonData.name + ': ' + buttonData.level, {font: '16px Arial Black'}));
+                    button.details = buttonData;
+                    button.costText = button.addChild(state.game.add.text(42, 24, 'Cost: ' + buttonData.cost, {font: '16px Arial Black'}));
+                    button.events.onInputDown.add(state.onUpgradeButtonClick, state);
+    
+                    upgradeButtons.addChild(button);
+                });
+                
+                
             }
         }
     }
