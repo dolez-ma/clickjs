@@ -33,6 +33,8 @@ game.state.add('play', {
         game.load.image('dagger', 'assets/images/496_RPG_icons/W_Dagger002.png');
         game.load.image('swordIcon1', 'assets/images/496_RPG_icons/W_Sword001.png');
         game.load.image('arrowIcon1', 'assets/images/496_RPG_icons/S_Bow03.png');
+        game.load.image('fire02', 'assets/images/496_RPG_icons/S_Fire02.png');
+        game.load.image('fire03', 'assets/images/496_RPG_icons/S_Ice08.png');
         
         // Upgrades container
         var bmd = this.game.add.bitmapData(250, 500);
@@ -44,7 +46,7 @@ game.state.add('play', {
         this.game.cache.addBitmapData('upgradePanel', bmd);
         
         // Buttons container
-        var buttonImage = this.game.add.bitmapData(476, 48);
+        var buttonImage = this.game.add.bitmapData(225, 48);
         buttonImage.ctx.fillStyle = '#e6dec7';
         buttonImage.ctx.strokeStyle = '#35371c';
         buttonImage.ctx.lineWidth = 4;
@@ -58,6 +60,7 @@ game.state.add('play', {
         this.levelKills = 0;
         // Monster kill required to advance a level
         this.levelKillsRequired = 10;
+        this.totalDps = 0;
     },
     create: function() {
         var state = this;
@@ -90,7 +93,7 @@ game.state.add('play', {
     },
     onClickMonster: function (monster, pointer) {
         this.currentMonster.damage(this.player.clickDmg);
-        this.monsterHealthText.text = this.currentMonster.alive ? this.currentMonster.health + ' HP' : 'DEAD';
+        this.monsterHealthText.text = this.currentMonster.alive ? this.currentMonster.health.toFixed(2) + ' HP' : 'DEAD';
         var dmgText = this.dmgTextPool.getFirstExists(false);
         if(dmgText){
             dmgText.text = this.player.clickDmg;
@@ -106,7 +109,7 @@ game.state.add('play', {
         var coin;
         coin = this.coins.getFirstExists(false);
         coin.reset(this.game.world.centerX + this.game.rnd.integerInRange(-100, 200), this.game.world.centerY + this.game.rnd.integerInRange(-100, 100));
-        coin.goldValue = Math.round(this.level * 1.33);
+        coin.goldValue = Math.round(monster.maxHealth/15);
         this.game.time.events.add(Phaser.Timer.SECOND * 3, this.onClickCoin, this, coin);
         
         this.levelKills++;
@@ -122,7 +125,7 @@ game.state.add('play', {
         // pick a new monster
         this.currentMonster = this.monsters.getRandom();
         // Upgrade monster based on level
-        this.currentMonster.maxHealth = Math.ceil(this.currentMonster.maxHealth + ((this.level - 1) * 10.6));
+        this.currentMonster.maxHealth = Math.ceil(10 * (this.level - 1 + Math.pow(1.55, this.level - 1)));
         // Heal monster
         this.currentMonster.revive(this.currentMonster.maxHealth);
     
@@ -143,38 +146,31 @@ game.state.add('play', {
     onUpgradeButtonClick: function (button, pointer) {
         
         function getAdjustedCost() {
-            return Math.ceil(button.details.cost + (button.details.level * 1.46));
+                return Math.floor(button.details.baseCost * Math.pow(1.07, button.details.level - 1));
         }
         
-        function getButtonDps(player) {
-            if(button.details.level % button.details.modulo === 0){
-                button.details.multiplier = button.details.multiplier * 1.2;
-                if(button.details.level >= 5 && button.details.level < 25){
-                    button.details.modulo = 25;
-                }
-                if(button.details.level > 100){
-                    button.details.modulo = 100;
-                }
-                button.details.baseDps *= Math.ceil(button.details.multiplier);
-                switch(button.details.type){
-                    case 'Click damage':
-                        player.clickDmg *= Math.ceil(button.details.multiplier);
-                        break;
-                    default:
-                        player.dps *= Math.ceil(button.details.multiplier);
-                        break;
-                }
+        function setButtonDmg() {
+            if(button.details.level === 10){
+                button.details.multiplier *= 1.10;
             }
-            
+    
+            if(button.details.level % 25 === 0 && button.details.level <= 100){
+                button.details.multiplier *= 1.25;
+            }
+    
+            if(button.details.level % 100 === 0 && button.details.level > 100){
+                button.details.multiplier *= 1.25;
+            }
             switch(button.details.type){
                 case 'Click damage':
-                    player.clickDmg += Math.ceil(button.details.baseDps);
+                    button.details.clickDmg = button.details.baseDps * button.details.multiplier * button.details.level;
                     break;
                 default:
-                    player.dps += button.details.baseDps;
+                    button.details.dps += button.details.baseDps * button.details.multiplier * button.details.level;
                     break;
             }
         }
+        
         
         if(this.player.gold - button.details.cost >= 0){
             this.player.gold -= button.details.cost;
@@ -183,8 +179,18 @@ game.state.add('play', {
             button.text.text = button.details.name + ': ' + button.details.level;
             button.details.cost = getAdjustedCost();
             button.costText.text = 'Cost: ' + button.details.cost;
-            getButtonDps(this.player);
-            button.dpsText.text = button.details.type + ': ' + (button.details.baseDps * button.details.level);
+            setButtonDmg();
+            var dpsdmg = 0, clickdmg = 0;
+            for(var i = 0; i < this.upgradePanel.children[0].children.length; i++){
+                if(this.upgradePanel.children[0].children[i].details.level > 0){
+                    dpsdmg += this.upgradePanel.children[0].children[i].details.dps;
+                    clickdmg += this.upgradePanel.children[0].children[i].details.clickDmg;
+                }
+            }
+            this.player.dps = Math.floor(dpsdmg);
+            this.player.clickDmg = Math.floor(clickdmg);
+            button.dpsText.text = button.details.type + ': ' + ((button.details.dps > 0) ? Math.floor(button.details.dps) : Math.floor(button.details.clickDmg));
+            this.totalDpsText.text = 'Total DPS: ' + this.player.dps;
             button.details.purchaseHandler.call(this, button, this.player);
         }
     },
@@ -193,7 +199,7 @@ game.state.add('play', {
             if(this.currentMonster && this.currentMonster.alive){
                 var dmg = this.player.dps / 10;
                 this.currentMonster.damage(dmg);
-                this.monsterHealthText.text = this.currentMonster.alive ? Math.round(this.currentMonster.health) + ' HP' : 'DEAD';
+                this.monsterHealthText.text = this.currentMonster.alive ? Math.round(this.currentMonster.health).toFixed(2) + ' HP' : 'DEAD';
             }
         }
     },
@@ -215,22 +221,22 @@ game.state.add('play', {
             createMonsters: function (state) {
                 const monsterData = [
                     {name: 'Flower Plant',      sprite: 'flower-plant',          maxHealth: 8},
-                    {name: 'Green Horn',        sprite: 'green-horn-monster',    maxHealth: 20},
-                    {name: 'Green Horn Zombie', sprite: 'green-horn-zombie',     maxHealth: 30},
-                    {name: 'Horn Skull',        sprite: 'horn_skull',            maxHealth: 13},
+                    {name: 'Green Horn',        sprite: 'green-horn-monster',    maxHealth: 10},
+                    {name: 'Green Horn Zombie', sprite: 'green-horn-zombie',     maxHealth: 9},
+                    {name: 'Horn Skull',        sprite: 'horn_skull',            maxHealth: 8},
                     {name: 'Landy',             sprite: 'land-monster',          maxHealth: 2},
                     {name: 'Orange Land',       sprite: 'orange-land-monster',   maxHealth: 5},
-                    {name: 'Pinkette',          sprite: 'pink-monster',          maxHealth: 15},
-                    {name: 'Red Zombie',        sprite: 'red-zombie',            maxHealth: 15},
-                    {name: 'Shadow Skull',      sprite: 'shadow-skull',          maxHealth: 30},
+                    {name: 'Pinkette',          sprite: 'pink-monster',          maxHealth: 2},
+                    {name: 'Red Zombie',        sprite: 'red-zombie',            maxHealth: 5},
+                    {name: 'Shadow Skull',      sprite: 'shadow-skull',          maxHealth: 10},
                     {name: 'Skull Land',        sprite: 'skull-land-monster',    maxHealth: 8},
-                    {name: 'Underground Worm',  sprite: 'underground-worm',      maxHealth: 20},
-                    {name: 'Walking Freak',     sprite: 'walking-monster',       maxHealth: 10},
-                    {name: 'Walking Green',     sprite: 'walking-green-monster', maxHealth: 15},
+                    {name: 'Underground Worm',  sprite: 'underground-worm',      maxHealth: 13},
+                    {name: 'Walking Freak',     sprite: 'walking-monster',       maxHealth: 2},
+                    {name: 'Walking Green',     sprite: 'walking-green-monster', maxHealth: 7},
                     {name: 'Bluggu',            sprite: 'blue-monster',          maxHealth: 4},
-                    {name: 'Birdy',             sprite: 'fly-monster',           maxHealth: 23},
-                    {name: 'Bigi',              sprite: 'land-monster2',         maxHealth: 25},
-                    {name: 'Spiky',             sprite: 'spiky-land-monster',    maxHealth: 27},
+                    {name: 'Birdy',             sprite: 'fly-monster',           maxHealth: 9},
+                    {name: 'Bigi',              sprite: 'land-monster2',         maxHealth: 8},
+                    {name: 'Spiky',             sprite: 'spiky-land-monster',    maxHealth: 2},
                 ];
     
                 self.monsters = self.game.add.group();
@@ -290,6 +296,11 @@ game.state.add('play', {
                     fill: '#fff',
                     strokeThickness: 4
                 } ));
+                self.totalDpsText = self.levelUI.addChild(self.game.add.text(0, 60, 'Total DPS: ' + self.player.dps, {
+                    font: '24px Arial Black',
+                    fill: '#fff',
+                    strokeThickness: 4
+                } ));
             },
             createPlayer: function () {
                 self.player = {
@@ -344,9 +355,12 @@ game.state.add('play', {
                         type: 'Click damage',
                         level: 1,
                         cost: 5,
+                        baseCost: 5,
+                        clickDmg: 1,
+                        dps: 0,
                         baseDps: 1,
                         modulo:5,
-                        multiplier: 1,
+                        multiplier: 1.07,
                         purchaseHandler: function (button, player) {
                         
                         }
@@ -356,10 +370,13 @@ game.state.add('play', {
                         name:'Peasant',
                         type: 'Dps',
                         level: 0,
-                        cost: 25,
+                        cost: 50,
+                        baseCost: 50,
+                        clickDmg: 0,
+                        dps: 5,
                         baseDps: 5,
                         modulo:10,
-                        multiplier: 1,
+                        multiplier: 1.02,
                         purchaseHandler: function (button, player) {
                         
                         }
@@ -369,12 +386,47 @@ game.state.add('play', {
                         name:'Bowman',
                         type: 'Dps',
                         level: 0,
-                        cost: 525,
-                        baseDps: 60,
+                        cost: 250,
+                        baseCost: 250,
+                        clickDmg: 0,
+                        baseDps: 22,
+                        dps: 22,
                         modulo:10,
-                        multiplier: 1,
+                        multiplier: 1.01,
                         purchaseHandler: function (button, player) {
                         
+                        }
+                    },
+                    {
+                        icon: 'fire02',
+                        name:'Pyromaniac',
+                        type: 'Dps',
+                        level: 0,
+                        cost: 1000,
+                        baseCost: 1000,
+                        clickDmg: 0,
+                        baseDps: 74,
+                        dps: 74,
+                        modulo:10,
+                        multiplier: 1.005,
+                        purchaseHandler: function (button, player) {
+            
+                        }
+                    },
+                    {
+                        icon: 'fire03',
+                        name:'Freeze psycho',
+                        type: 'Dps',
+                        level: 0,
+                        cost: 15000,
+                        baseCost: 15000,
+                        clickDmg: 0,
+                        baseDps: 135,
+                        dps: 135,
+                        modulo:10,
+                        multiplier: 1.0005,
+                        purchaseHandler: function (button, player) {
+            
                         }
                     }
                 ];
@@ -390,8 +442,18 @@ game.state.add('play', {
                     button.icon = button.addChild(state.game.add.image(6, 4, buttonData.icon));
                     button.text = button.addChild(state.game.add.text(42, 4, buttonData.name + ': ' + buttonData.level, {font: '11px Arial Black'}));
                     button.details = buttonData;
-                    button.costText = button.addChild(state.game.add.text(42, 16, 'Cost: ' + buttonData.cost, {font: '11px Arial Black'}));
-                    button.dpsText = button.addChild(state.game.add.text(42, 28, buttonData.type + ': ' + (buttonData.multiplier * buttonData.baseDps * buttonData.level), {font: '11px Arial Black'}));
+                    button.costText = button.addChild(state.game.add.text(
+                            42, 16,
+                            'Cost: ' + buttonData.cost,
+                            {font: '11px Arial Black'}
+                        )
+                    );
+                    button.dpsText = button.addChild(state.game.add.text(
+                            42, 28,
+                            buttonData.type + ': ' + (buttonData.multiplier * buttonData.baseDps * buttonData.level),
+                            {font: '11px Arial Black'}
+                        )
+                    );
                     button.events.onInputDown.add(state.onUpgradeButtonClick, state);
     
                     upgradeButtons.addChild(button);
