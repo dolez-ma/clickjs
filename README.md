@@ -1,5 +1,9 @@
 # Click JS
 
+## Dependencies
+
+PhaserJS is used.
+
 ## Installation
 
 Install in the www of your WAMP/MAMP/LAMP, launch server.
