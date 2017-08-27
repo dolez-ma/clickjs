@@ -32,6 +32,7 @@ game.state.add('play', {
         game.load.image('gold_coin', 'assets/images/496_RPG_icons/I_GoldCoin.png');
         game.load.image('dagger', 'assets/images/496_RPG_icons/W_Dagger002.png');
         game.load.image('swordIcon1', 'assets/images/496_RPG_icons/W_Sword001.png');
+        game.load.image('arrowIcon1', 'assets/images/496_RPG_icons/S_Bow03.png');
         
         // Upgrades container
         var bmd = this.game.add.bitmapData(250, 500);
@@ -121,7 +122,7 @@ game.state.add('play', {
         // pick a new monster
         this.currentMonster = this.monsters.getRandom();
         // Upgrade monster based on level
-        this.currentMonster.maxHealth = Math.ceil(this.currentMonster.details.maxHealth + ((this.level - 1) * 10.6));
+        this.currentMonster.maxHealth = Math.ceil(this.currentMonster.maxHealth + ((this.level - 1) * 10.6));
         // Heal monster
         this.currentMonster.revive(this.currentMonster.maxHealth);
     
@@ -145,6 +146,36 @@ game.state.add('play', {
             return Math.ceil(button.details.cost + (button.details.level * 1.46));
         }
         
+        function getButtonDps(player) {
+            if(button.details.level % button.details.modulo === 0){
+                button.details.multiplier = button.details.multiplier * 1.2;
+                if(button.details.level >= 5 && button.details.level < 25){
+                    button.details.modulo = 25;
+                }
+                if(button.details.level > 100){
+                    button.details.modulo = 100;
+                }
+                button.details.baseDps *= Math.ceil(button.details.multiplier);
+                switch(button.details.type){
+                    case 'Click damage':
+                        player.clickDmg *= Math.ceil(button.details.multiplier);
+                        break;
+                    default:
+                        player.dps *= Math.ceil(button.details.multiplier);
+                        break;
+                }
+            }
+            
+            switch(button.details.type){
+                case 'Click damage':
+                    player.clickDmg += Math.ceil(button.details.baseDps);
+                    break;
+                default:
+                    player.dps += button.details.baseDps;
+                    break;
+            }
+        }
+        
         if(this.player.gold - button.details.cost >= 0){
             this.player.gold -= button.details.cost;
             this.playerGoldText.text = 'Money: ' + this.player.gold;
@@ -152,6 +183,8 @@ game.state.add('play', {
             button.text.text = button.details.name + ': ' + button.details.level;
             button.details.cost = getAdjustedCost();
             button.costText.text = 'Cost: ' + button.details.cost;
+            getButtonDps(this.player);
+            button.dpsText.text = button.details.type + ': ' + (button.details.baseDps * button.details.level);
             button.details.purchaseHandler.call(this, button, this.player);
         }
     },
@@ -308,19 +341,40 @@ game.state.add('play', {
                     {
                         icon: 'dagger',
                         name:'Attack',
+                        type: 'Click damage',
                         level: 1,
                         cost: 5,
+                        baseDps: 1,
+                        modulo:5,
+                        multiplier: 1,
                         purchaseHandler: function (button, player) {
-                            player.clickDmg += 1;
+                        
                         }
                     },
                     {
                         icon: 'swordIcon1',
-                        name:'Auto-Attack',
+                        name:'Peasant',
+                        type: 'Dps',
                         level: 0,
                         cost: 25,
+                        baseDps: 5,
+                        modulo:10,
+                        multiplier: 1,
                         purchaseHandler: function (button, player) {
-                            player.dps += 5;
+                        
+                        }
+                    },
+                    {
+                        icon: 'arrowIcon1',
+                        name:'Bowman',
+                        type: 'Dps',
+                        level: 0,
+                        cost: 525,
+                        baseDps: 60,
+                        modulo:10,
+                        multiplier: 1,
+                        purchaseHandler: function (button, player) {
+                        
                         }
                     }
                 ];
@@ -333,10 +387,11 @@ game.state.add('play', {
                 var button;
                 upgradeButtonsData.forEach(function (buttonData, index) {
                     button = self.game.add.button(0, (50 * index), self.game.cache.getBitmapData('button'));
-                    button.icon = button.addChild(state.game.add.image(6, 6, buttonData.icon));
-                    button.text = button.addChild(state.game.add.text(42, 6, buttonData.name + ': ' + buttonData.level, {font: '16px Arial Black'}));
+                    button.icon = button.addChild(state.game.add.image(6, 4, buttonData.icon));
+                    button.text = button.addChild(state.game.add.text(42, 4, buttonData.name + ': ' + buttonData.level, {font: '11px Arial Black'}));
                     button.details = buttonData;
-                    button.costText = button.addChild(state.game.add.text(42, 24, 'Cost: ' + buttonData.cost, {font: '16px Arial Black'}));
+                    button.costText = button.addChild(state.game.add.text(42, 16, 'Cost: ' + buttonData.cost, {font: '11px Arial Black'}));
+                    button.dpsText = button.addChild(state.game.add.text(42, 28, buttonData.type + ': ' + (buttonData.multiplier * buttonData.baseDps * buttonData.level), {font: '11px Arial Black'}));
                     button.events.onInputDown.add(state.onUpgradeButtonClick, state);
     
                     upgradeButtons.addChild(button);
