@@ -35,11 +35,16 @@ game.state.add('play', {
         game.load.image('arrowIcon1', 'assets/images/496_RPG_icons/S_Bow03.png');
         game.load.image('fire02', 'assets/images/496_RPG_icons/S_Fire02.png');
         game.load.image('fire03', 'assets/images/496_RPG_icons/S_Ice08.png');
+        game.load.image('lauratatouille', 'assets/images/496_RPG_icons/I_C_Cherry.png');
+        game.load.image('enfer', 'assets/images/496_RPG_icons/S_Bow06.png');
+    
+        game.load.audio('boden', ['assets/audio/music/battleThemeA.mp3']);
+        game.load.audio('sfx', ['assets/audio/sfx/swish_2.wav']);
         
         // Upgrades container
         var bmd = this.game.add.bitmapData(250, 500);
-        bmd.ctx.fillStyle = '#9a783d';
-        bmd.ctx.strokeStyle = '#35371c';
+        bmd.ctx.fillStyle = '#415e9a';
+        bmd.ctx.strokeStyle = '#171437';
         bmd.ctx.lineWidth = 12;
         bmd.ctx.fillRect(0, 0, 250, 500);
         bmd.ctx.strokeRect(0, 0, 250, 500);
@@ -47,8 +52,8 @@ game.state.add('play', {
         
         // Buttons container
         var buttonImage = this.game.add.bitmapData(225, 48);
-        buttonImage.ctx.fillStyle = '#e6dec7';
-        buttonImage.ctx.strokeStyle = '#35371c';
+        buttonImage.ctx.fillStyle = '#bab4e6';
+        buttonImage.ctx.strokeStyle = '#161a37';
         buttonImage.ctx.lineWidth = 4;
         buttonImage.ctx.fillRect(0, 0, 225, 48);
         buttonImage.ctx.strokeRect(0, 0, 225, 48);
@@ -87,11 +92,20 @@ game.state.add('play', {
         this.utils().createUpgratePanel(this);
         
         this.dpsTimer = this.game.time.events.loop(100, this.onDPS, this);
+        this.music = game.add.audio('boden');
+        this.sfx = game.add.audio('sfx');
+        this.sfx.volume -= 0.7;
+        this.music.volume -= 0.8;
+        this.music.loop = true;
+        this.music.play();
+    
+        
     },
     render: function() {
     
     },
     onClickMonster: function (monster, pointer) {
+        this.sfx.play();
         this.currentMonster.damage(this.player.clickDmg);
         this.monsterHealthText.text = this.currentMonster.alive ? this.currentMonster.health.toFixed(2) + ' HP' : 'DEAD';
         var dmgText = this.dmgTextPool.getFirstExists(false);
@@ -399,7 +413,7 @@ game.state.add('play', {
                     },
                     {
                         icon: 'fire02',
-                        name:'Pyromaniac',
+                        name:'Pyro',
                         type: 'Dps',
                         level: 0,
                         cost: 1000,
@@ -415,14 +429,46 @@ game.state.add('play', {
                     },
                     {
                         icon: 'fire03',
-                        name:'Freeze psycho',
+                        name:'Ice Warlord',
                         type: 'Dps',
                         level: 0,
-                        cost: 15000,
-                        baseCost: 15000,
+                        cost: 4000,
+                        baseCost: 4000,
                         clickDmg: 0,
-                        baseDps: 135,
-                        dps: 135,
+                        baseDps: 245,
+                        dps: 245,
+                        modulo:10,
+                        multiplier: 1.0005,
+                        purchaseHandler: function (button, player) {
+            
+                        }
+                    },
+                    {
+                        icon: 'lauratatouille',
+                        name:'Laura Tatouille',
+                        type: 'Dps',
+                        level: 0,
+                        cost: 20000,
+                        baseCost: 20000,
+                        clickDmg: 0,
+                        baseDps: 976,
+                        dps: 976,
+                        modulo:10,
+                        multiplier: 1.0005,
+                        purchaseHandler: function (button, player) {
+            
+                        }
+                    },
+                    {
+                        icon: 'enfer',
+                        name:'Victor Enfer',
+                        type: 'Dps',
+                        level: 0,
+                        cost: 100000,
+                        baseCost: 100000,
+                        clickDmg: 0,
+                        baseDps: 3725,
+                        dps: 3725,
                         modulo:10,
                         multiplier: 1.0005,
                         purchaseHandler: function (button, player) {
