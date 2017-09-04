@@ -38,7 +38,7 @@ game.state.add('play', {
         game.load.image('lauratatouille', 'assets/images/496_RPG_icons/I_C_Cherry.png');
         game.load.image('enfer', 'assets/images/496_RPG_icons/S_Bow06.png');
     
-        game.load.audio('boden', ['assets/audio/music/battleThemeA.mp3']);
+        game.load.audio('boden', ['assets/audio/music/PathtoLakeLand.ogg']);
         game.load.audio('sfx', ['assets/audio/sfx/swish_2.wav']);
         
         // Upgrades container
@@ -95,7 +95,7 @@ game.state.add('play', {
         this.music = game.add.audio('boden');
         this.sfx = game.add.audio('sfx');
         this.sfx.volume -= 0.7;
-        this.music.volume -= 0.8;
+        this.music.volume -= 0.1;
         this.music.loop = true;
         this.music.play();
     
